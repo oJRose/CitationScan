@@ -75,31 +75,36 @@ export default function Home() {
   };
 
   // Gestion de la camera pour l'iPhone
-  useEffect(() => {
-    if (!cameraActive) return;
+// Gestion de la camera pour l'iPhone
+    useEffect(() => {
+      if (!cameraActive) return;
 
-    const scanner = new Html5QrcodeScanner(
-      "reader",
-      { 
-        fps: 10, 
-        qrbox: { width: 260, height: 140 }, 
-        aspectRatio: 1.777778 
-      },
-      false
-    );
+      const scanner = new Html5QrcodeScanner(
+        "reader",
+        { 
+          fps: 10, 
+          qrbox: { width: 260, height: 140 }, 
+          aspectRatio: 1.777778,
+          // FORCE LA CAMERA ARRIERE ICI :
+          videoConstraints: {
+            facingMode: "environment"
+          }
+        },
+        false
+      );
 
-    scanner.render(
-      (decodedText) => {
-        fetchBookByISBN(decodedText);
-        scanner.clear().then(() => setCameraActive(false)).catch(console.error);
-      },
-      () => { /* Echecs de scan silencieux pendant la mise au point */ }
-    );
+      scanner.render(
+        (decodedText) => {
+          fetchBookByISBN(decodedText);
+          scanner.clear().then(() => setCameraActive(false)).catch(console.error);
+        },
+        () => { /* Echecs de scan silencieux pendant la mise au point */ }
+      );
 
-    return () => {
-      scanner.clear().catch(err => console.error("Erreur destruction camera", err));
-    };
-  }, [cameraActive]);
+      return () => {
+        scanner.clear().catch(err => console.error("Erreur destruction camera", err));
+      };
+    }, [cameraActive]);
 
   // Chargement initial des donnees et clic exterieur
   useEffect(() => {
