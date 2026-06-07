@@ -250,6 +250,15 @@ const fetchBookByISBN = async (isbn: string) => {
             ) : (
               <div className="bg-gray-900 rounded-3xl p-4 overflow-hidden shadow-inner max-w-md mx-auto">
                 <div id="reader" className="w-full overflow-hidden rounded-2xl bg-black"></div>
+                {lastScannedCode && (
+                  <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
+                    <p className="text-xs text-red-400 font-semibold">
+                      {lastScannedCode === "Code trop court" || lastScannedCode === "Erreur de connexion"
+                        ? lastScannedCode
+                        : `Google Books ne trouve rien pour le code : ${lastScannedCode}`}
+                    </p>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => setCameraActive(false)}
