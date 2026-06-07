@@ -42,6 +42,7 @@ export default function Home() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
+  const [lastScannedCode, setLastScannedCode] = useState("");
   
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const categories = ["Tous", "Roman", "Philosophie", "Psychologie", "Technique"];
@@ -51,12 +52,12 @@ export default function Home() {
   // Action pour chercher un livre par son code barre (ISBN)
 const fetchBookByISBN = async (isbn: string) => {
   setIsSearching(true);
+  setLastScannedCode(""); // On réinitialise
   
-  // 1. NETTOYAGE : On ne garde QUE les chiffres (supprime les espaces, tirets ou lettres parasites)
   const cleanIsbn = isbn.replace(/[^0-9]/g, '');
   
-  if (!cleanIsbn) {
-    alert("Code barre illisible ou invalide.");
+  if (cleanIsbn.length < 10) {
+    setLastScannedCode("Code trop court");
     setIsSearching(false);
     return;
   }
@@ -64,19 +65,18 @@ const fetchBookByISBN = async (isbn: string) => {
   try {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY;
     
-    // Tentative 1 : Recherche chirurgicale par ISBN
+    // Tentative 1 : Recherche stricte
     let url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&key=${apiKey}`;
     let response = await fetch(url);
     let data = await response.json();
     
-    // Tentative 2 : Si l'ISBN strict ne donne rien, on fait une recherche générale avec le code
+    // Tentative 2 : Recherche large si la première échoue
     if (!data.items || data.items.length === 0) {
       url = `https://www.googleapis.com/books/v1/volumes?q=${cleanIsbn}&key=${apiKey}`;
       response = await fetch(url);
       data = await response.json();
     }
     
-    // 2. TRAITEMENT DU RÉSULTAT
     if (data.items && data.items.length > 0) {
       const info = data.items[0].volumeInfo;
       setNewTitle(info.title);
@@ -84,12 +84,12 @@ const fetchBookByISBN = async (isbn: string) => {
       const thumb = info.imageLinks?.thumbnail?.replace('http://', 'https://');
       setNewCoverUrl(thumb || "");
     } else {
-      // Pour t'aider à debugger en live sur ton iPhone, on affiche le code détecté
-      alert(`Livre introuvable pour le code detecte : ${cleanIsbn}`);
+      // Au lieu d'une alerte, on enregistre le problème pour l'afficher dans l'interface
+      setLastScannedCode(cleanIsbn);
     }
   } catch (error) {
-    console.error("Erreur recherche ISBN:", error);
-    alert("Une erreur est survenue lors de la recherche du livre.");
+    console.error("Erreur recherche:", error);
+    setLastScannedCode("Erreur de connexion");
   } finally {
     setIsSearching(false);
   }
