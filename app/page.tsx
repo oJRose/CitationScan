@@ -49,30 +49,51 @@ export default function Home() {
   // --- 2. LOGIQUE ET FONCTIONS (ORDONNEES POUR EVITER LES ERREURS) ---
 
   // Action pour chercher un livre par son code barre (ISBN)
-  const fetchBookByISBN = async (isbn: string) => {
-    setIsSearching(true);
-    try {
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY;
-      const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&key=${apiKey}`;
-      
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      if (data.items && data.items.length > 0) {
-        const info = data.items[0].volumeInfo;
-        setNewTitle(info.title);
-        setNewAuthor(info.authors ? info.authors[0] : "Auteur inconnu");
-        const thumb = info.imageLinks?.thumbnail?.replace('http://', 'https://');
-        setNewCoverUrl(thumb || "");
-      } else {
-        alert("Aucun ouvrage trouve pour ce code barre.");
-      }
-    } catch (error) {
-      console.error("Erreur recherche ISBN:", error);
-    } finally {
-      setIsSearching(false);
+const fetchBookByISBN = async (isbn: string) => {
+  setIsSearching(true);
+  
+  // 1. NETTOYAGE : On ne garde QUE les chiffres (supprime les espaces, tirets ou lettres parasites)
+  const cleanIsbn = isbn.replace(/[^0-9]/g, '');
+  
+  if (!cleanIsbn) {
+    alert("Code barre illisible ou invalide.");
+    setIsSearching(false);
+    return;
+  }
+
+  try {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY;
+    
+    // Tentative 1 : Recherche chirurgicale par ISBN
+    let url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&key=${apiKey}`;
+    let response = await fetch(url);
+    let data = await response.json();
+    
+    // Tentative 2 : Si l'ISBN strict ne donne rien, on fait une recherche générale avec le code
+    if (!data.items || data.items.length === 0) {
+      url = `https://www.googleapis.com/books/v1/volumes?q=${cleanIsbn}&key=${apiKey}`;
+      response = await fetch(url);
+      data = await response.json();
     }
-  };
+    
+    // 2. TRAITEMENT DU RÉSULTAT
+    if (data.items && data.items.length > 0) {
+      const info = data.items[0].volumeInfo;
+      setNewTitle(info.title);
+      setNewAuthor(info.authors ? info.authors[0] : "Auteur inconnu");
+      const thumb = info.imageLinks?.thumbnail?.replace('http://', 'https://');
+      setNewCoverUrl(thumb || "");
+    } else {
+      // Pour t'aider à debugger en live sur ton iPhone, on affiche le code détecté
+      alert(`Livre introuvable pour le code detecte : ${cleanIsbn}`);
+    }
+  } catch (error) {
+    console.error("Erreur recherche ISBN:", error);
+    alert("Une erreur est survenue lors de la recherche du livre.");
+  } finally {
+    setIsSearching(false);
+  }
+};
 
   // Gestion de la camera pour l'iPhone
 // Gestion de la camera pour l'iPhone
