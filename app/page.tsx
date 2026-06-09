@@ -50,7 +50,7 @@ export default function Home() {
     return () => window.removeEventListener('click', closeMenu);
   }, []);
 
-  // --- RECHERCHE GOOGLE BOOKS ---
+  // --- RECHERCHE GOOGLE BOOKS EN TEMPS REEL ---
   const searchBookByTitle = (title: string) => {
     setNewTitle(title);
     if (title.length < 3) {
@@ -74,10 +74,10 @@ export default function Home() {
       } finally {
         setIsSearching(false);
       }
-    }, 500); // Recherche 500ms après l'arrêt de la saisie
+    }, 400); // Déclenche la recherche 400ms après l'arrêt de la saisie
   };
 
-  // --- SELECTIONNER UN LIVRE ---
+  // --- SELECTIONNER UN LIVRE DE LA LISTE ---
   const selectSuggestion = (book: GoogleBook) => {
     const info = book.volumeInfo;
     setNewTitle(info.title);
@@ -100,7 +100,7 @@ export default function Home() {
 
     if (data) {
       setBooks([data as Book, ...books]);
-      // Reset
+      // Reset du formulaire
       setNewTitle("");
       setNewAuthor("");
       setNewCoverUrl("");
@@ -111,18 +111,18 @@ export default function Home() {
   return (
     <main className="max-w-4xl mx-auto p-4 min-h-screen bg-gray-50 text-gray-900">
       
-      {/* Header */}
+      {/* En-tête */}
       <div className="flex justify-between items-center my-6">
-        <h1 className="text-2xl font-black tracking-tight">Ma Reserve</h1>
+        <h1 className="text-2xl font-black tracking-tight">Ma Bibliothèque</h1>
         <button 
           onClick={() => setIsAdding(!isAdding)}
-          className="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm"
+          className="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-sm"
         >
           {isAdding ? "Annuler" : "Ajouter un livre"}
         </button>
       </div>
 
-      {/* Formulaire simplifie */}
+      {/* Formulaire de saisie assistée */}
       {isAdding && (
         <form onSubmit={handleSave} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 space-y-4">
           
@@ -133,29 +133,30 @@ export default function Home() {
                 value={newTitle}
                 onChange={(e) => searchBookByTitle(e.target.value)}
                 className="w-full p-3 bg-gray-50 rounded-xl outline-none focus:bg-white border border-transparent focus:border-blue-500 transition-all text-sm"
-                placeholder="Tapez le titre ou scannez la couverture"
+                placeholder="Tape les premières lettres du titre..."
                 required
+                autoComplete="off"
               />
               {isSearching && <div className="absolute right-3 animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />}
             </div>
 
-            {/* Suggestions de recherche */}
+            {/* Menu déroulant des suggestions Google Books */}
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
                 {suggestions.map((book) => (
                   <button
                     key={book.id}
                     type="button"
                     onClick={() => selectSuggestion(book)}
-                    className="w-full flex items-center gap-3 p-2 hover:bg-gray-50 text-left border-b border-gray-100 last:border-none"
+                    className="w-full flex items-center gap-3 p-2 hover:bg-blue-50/50 text-left border-b border-gray-100 last:border-none"
                   >
-                    <div className="relative w-8 h-12 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                    <div className="relative w-8 h-12 flex-shrink-0 bg-gray-100 rounded overflow-hidden shadow-sm">
                       {book.volumeInfo.imageLinks?.thumbnail && (
                         <Image src={book.volumeInfo.imageLinks.thumbnail.replace('http://', 'https://')} alt="" fill className="object-cover" />
                       )}
                     </div>
                     <div className="overflow-hidden">
-                      <p className="font-bold text-xs truncate">{book.volumeInfo.title}</p>
+                      <p className="font-bold text-xs truncate text-gray-900">{book.volumeInfo.title}</p>
                       <p className="text-[10px] text-gray-500 truncate">{book.volumeInfo.authors?.[0] || "Auteur inconnu"}</p>
                     </div>
                   </button>
@@ -164,23 +165,25 @@ export default function Home() {
             )}
           </div>
 
+          {/* Champ Auteur (rempli automatiquement mais modifiable) */}
           <div>
             <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Auteur</label>
             <input 
               value={newAuthor}
               onChange={e => setNewAuthor(e.target.value)}
-              className="w-full p-3 bg-gray-50 rounded-xl outline-none border border-transparent text-sm"
+              className="w-full p-3 bg-gray-50 rounded-xl outline-none border border-transparent text-sm focus:bg-white focus:border-blue-500 transition-all"
               placeholder="Nom de l'auteur"
             />
           </div>
 
+          {/* Choix Catégorie et Validation */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Categorie</label>
+              <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Catégorie</label>
               <select 
                 value={newCategory}
                 onChange={e => setNewCategory(e.target.value)}
-                className="w-full p-3 bg-gray-50 rounded-xl outline-none text-sm bg-white"
+                className="w-full p-3 bg-gray-50 rounded-xl outline-none text-sm bg-white border border-transparent focus:border-blue-500"
               >
                 <option value="Roman">Roman</option>
                 <option value="Philosophie">Philosophie</option>
@@ -190,28 +193,28 @@ export default function Home() {
             </div>
             
             <div className="flex items-end">
-              <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl text-sm hover:bg-blue-700">
-                Enregistrer le livre
+              <button type="submit" className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors shadow-sm">
+                Confirmer l ajout
               </button>
             </div>
           </div>
         </form>
       )}
 
-      {/* Grille de livres super propre */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      {/* Grille de ta bibliothèque */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {books.map((book) => (
           <Link href={`/livre/${book.id}`} key={book.id} className="group bg-white rounded-2xl border border-gray-100 p-3 shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-72">
             <div className="relative h-44 w-full bg-gray-50 rounded-xl overflow-hidden mb-2">
               {book.cover_url ? (
-                <Image src={book.cover_url} alt={book.title} fill sizes="30vw" className="object-cover" />
+                <Image src={book.cover_url} alt={book.title} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover group-hover:scale-102 transition-transform" />
               ) : (
-                <div className="w-full h-full bg-gray-200 flex items-center justify-center font-bold text-gray-400">{book.title[0]}</div>
+                <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center font-bold text-gray-400 text-xl">{book.title[0]}</div>
               )}
             </div>
             <div className="flex flex-col justify-between flex-grow">
-              <h2 className="text-xs font-bold text-gray-900 line-clamp-2 leading-tight">{book.title}</h2>
-              <p className="text-[10px] text-blue-600 font-semibold truncate mt-1">{book.author || "Auteur inconnu"}</p>
+              <h2 className="text-xs font-bold text-gray-900 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">{book.title}</h2>
+              <p className="text-[10px] text-gray-400 font-medium truncate mt-1">{book.author || "Auteur inconnu"}</p>
             </div>
           </Link>
         ))}
